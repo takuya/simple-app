@@ -1,0 +1,25 @@
+{
+    "name": "takuya/simple-app",
+    "description": "どこでもすぐ使えるシンプルな構成",
+    "type": "library",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "takuya",
+            "email": "takuya.1st+nospam@gmail.com"
+        }
+    ],
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "autoload": {
+        "psr-4": {
+          "takuya\\": "src/takuya",
+          "takuya\\SimpleWebApp\\": "src/takuya/SimpleWebApp"
+        }
+    }
+}
