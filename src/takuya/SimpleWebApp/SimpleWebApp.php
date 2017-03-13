@@ -137,7 +137,9 @@ class SimpleWebApp {
   public function head( $name, $func ){
     $this->routes["HEAD"][$name] = $func;
   }
-  
+  public function post( $name, $func ){
+    $this->routes["POST"][$name] = $func;
+  }
   
   //メイン処理
   public function run() {
