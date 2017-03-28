@@ -25,7 +25,30 @@ class SimpleWebApp {
     $this->get("index", function(){ echo "index";});
     $this->get("static", [ $this, "send_static" ]);
     self::$_instance = $this;
+    $this->add_pre_get_filter( array($this,'rescan_hash_string_in_query_string') );
   }
+  //リクエストデータをフィルタリングして必要なものだけを取り出す。
+  protected static function parse_request( $defaults, $request_arg ){
+    $req = array_merge($defaults, $request_arg);
+    $req = array_intersect_key($req, $defaults);
+    $req = (object) $req;
+    return $req;
+  }
+  public static function get_request($defaults){
+    return self::parse_request( $defaults, $_REQUEST);
+  }
+  //aliases
+  public static function requests($defaults){
+    return self::get_request( $defaults, $_REQUEST);
+  }
+  public static function get_params($defaults){
+    return self::parse_request( $defaults, $_GET);
+  }
+  public static function post_params($defaults){
+    return self::parse_request( $defaults, $_POST);
+  }
+
+  // テンプレート処理
   public function set_template_path($arg){
     if( !is_dir($arg ) ){
       throw new \Exception("$arg does not exist.");
@@ -65,6 +88,7 @@ class SimpleWebApp {
     }
     $this->send_content($f_name);
   }
+  
   // テンプレ処理
   public function render( $f_name , $params=[], $auto_flush = true) {
     if( !empty($params )){
@@ -82,7 +106,7 @@ class SimpleWebApp {
     if( !empty( $params )){ extract($params); }
     ob_clean();
     ob_start();
-    // ob_start("ob_gzhandler");// Accept-Encding 見て判断してくれるが、Apacheに任せたほうが楽
+    // ob_start("ob_gzhandler");// Accept-Encding 見て判断してくれるhttpdに任せたほうが楽
     include ($path);
     if($auto_flush){
       return ob_end_flush();
@@ -94,7 +118,6 @@ class SimpleWebApp {
   }
   // 強制gzip 処理をする
   // たとえjpeg でも10%前後は小さくなる
-  // Content-type:text/html はApacheがやるので特に必要ない
   public function send_content_gzip($content){
     $gz_data = gzencode( $content , 9);
     // 画像の送信
@@ -122,7 +145,6 @@ class SimpleWebApp {
       }
     }
     // キャッシュなし、キャッシュ切れの場合、キャッシュ許可を再送する
-    header("Pragma : $pragma_value", true);
     header("Cache-Control: $pragma_value, max-age=$lifetime", true); 
     header("Last-modified: ". gmdate( 'D, d M Y H:i:s', $last_modified ) . ' GMT', true );
     header("Expires: ". gmdate( 'D, d M Y H:i:s', time()+$lifetime ) . ' GMT' , true);
@@ -131,40 +153,74 @@ class SimpleWebApp {
 
 
   //処理登録
-  public function get( $name, $func ){
-    $this->routes["GET"][$name] = $func;
+  protected function http_handler($method, $route, $func){
+    $this->routes[$method][$route] = $func;
   }
-  public function head( $name, $func ){
+  public function get( $route, $func ){
+    $this->http_handler( 'GET', $route, $func );
+  }
+  public function head( $route, $func ){
+    $this->http_handler( 'HEAD', $route, $func );
     $this->routes["HEAD"][$name] = $func;
   }
-  public function post( $name, $func ){
-    $this->routes["POST"][$name] = $func;
+  public function post( $route, $func ){
+    $this->http_handler( 'POST', $route, $func );
+  }
+  public function put( $route, $func ){
+    $this->http_handler( 'PUT', $route, $func );
+  }
+  public function delete( $route, $func ){
+    $this->http_handler( 'DELETE', $route, $func );
+  }
+  
+  // フィルタ登録処理
+  public function add_filter($point='pre', $method='GET', $func ){
+    
+    $method=strtoupper($method);
+    $this->filters = !empty($this->filters) ?: array();
+    $this->filters["$point$method"] = !empty($this->filters["$point$method"]) ?: array();
+    $this->filters["$point$method"][] = $func;
+    return $this;
+  }
+  //aliases
+  public function add_pre_get_filter($func){
+    return $this->add_filter( 'pre', 'GET', $func );
   }
   
   //メイン処理
   public function run() {
+
     $req_method = $_SERVER["REQUEST_METHOD"];
     if( !empty( $_REQUEST["method"]) ) {
-      $req_method = $_REQUEST["method"];
+      $req_method = strtoupper($_REQUEST["method"]);
     }
-    // method が登録されてる
+
+    // プレ・フィルタープラグイン処理
+    if ( method_exists($this, "do_pre${req_method}") ){
+      $this->{"do_pre{$req_method}"}();
+    }
+
+    // methodが登録されてる？
     if ( empty($this->routes[$req_method]) ){
       $this->http_method_not_implemented();
       return ;
     }
     // Actionを決める
-    $func = $this->act_key();
+    $func = $this->act_func($req_method);
     if ( empty ( $func ) ) {
       $act_name = $this->act_name() ? $this->act_name() : 'null';
       $this->action_not_found( $this->act_name() );
       return ;
     }
-    // フィルタープラグイン処理
-    if ( method_exists($this, "do_${req_method}") ){
-      $this->{"do_{$req_method}"}();
-    }
     //route 登録したハンドラを実行
     call_user_func_array($func, array());
+    
+    
+    // ポスト・フィルタープラグイン処理
+    if ( method_exists($this, "do_post${req_method}") ){
+      $this->{"do_post{$req_method}"}();
+    }
+    
   }
 
 
@@ -178,16 +234,17 @@ class SimpleWebApp {
     // これを 'name=value%23hashname=value' と送信してくる
     // その為に'#' が混じる場合があるので処理が必要
     $action_name = explode('#', $action_name)[0];
+
     return $action_name;
   }
 
-  protected function act_key(){
+  protected function act_func($req_method){
     $action_name = $this->act_name();
 
-    if (empty( $this->routes[$_SERVER["REQUEST_METHOD"]][$action_name] ) ) {
+    if (empty( $this->routes[$req_method][$action_name] ) ) {
       return;
     }
-    $action =  $this->routes[$_SERVER["REQUEST_METHOD"]][$action_name];
+    $action =  $this->routes[$req_method][$action_name];
     return $action;
   }
   
@@ -208,10 +265,43 @@ class SimpleWebApp {
   }
 
   
-  //将来的に処理へプラグインするためHTTP メソッド単位で分けた
-  public function do_GET(){
+  //処理へフィルタプラグインするためHTTP メソッド単位で分けた
+  protected function do_filter($name){
+    if ( empty( $this->filters[$name] ) )  {
+      return;
+    }
+    foreach( $this->filters[$name] as $func ){
+      call_user_func_array($func, array());
+    }
+    
+  }
+  //aliases
+  public function do_preGET  (){ $this->do_filter('preGET'  );}
+  public function do_postGET (){ $this->do_filter('postGET' );}
+  public function do_prePOST (){ $this->do_filter('prePOST' );}
+  public function do_postPOST(){ $this->do_filter('postPOST');}
+  
+  /****************
+  **  幾つかのブラウザに見られるバグの強引な対応
+  **  バグはハッシュ文字列について起きる。
+  ** 
+  **  $_SERVER['QUERY_STRING'] が'name=Value#hashname=value'を送信してくる
+  **  これを 'name=value%23hashname=value' と送信してくる時がある。
+  **  その為に'#' が混じる場合があるので処理が必要
+  **  ただし、ハッシュが検索文字列として渡された場合に、誤作動する危険性もある。
+  ** **************/
+  protected function rescan_hash_string_in_query_string( ) {
+    if ( empty ($_SERVER['QUERY_STRING']) || strpos($_SERVER['QUERY_STRING'], '%23') === false ){
+      return;
+    }
+    
+    $_SERVER['QUERY_STRING'] = str_replace( '%23', '#', $_SERVER['QUERY_STRING'] );
+    $arr = parse_url($_SERVER['QUERY_STRING']);
+    $_SERVER['QUERY_STRING'] = $arr['path'];
+    parse_str($_SERVER['QUERY_STRING'], $_GET );
+    $_REQUEST= array_merge( $_GET,$_POST );
 
   }
-  public function do_HEAD(){
-  }
+
+
 }
