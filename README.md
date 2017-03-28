@@ -141,7 +141,7 @@ class MyApp extends SimpleRoutedWebApp {
     $req = $app->requests($defaults);
 
     //チェック
-    $req->limit = $req->limit < 1 ?: $defaults['limit']);
+    $req->limit = $req->limit < 1 ?: $defaults['limit'];
     
     $ret = query( $req->search, $req->limit , $req->offset );
     //出力
