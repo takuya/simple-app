@@ -5,38 +5,7 @@
 - フレームワークを使い始めると、アレコレ余計な作業が増えるので
 - 目の前のことに集中できるように
 
-なるべくなにもないように
-
-
-## index.php 
-index.php を作っておいたらすぐ動くように。
-
-
-```php
-<?php
-
-class MyApp extends SimpleWebApp {
-}
-
-// App を初期設定する
-$app = new MyApp;
-$app->set_template_path( realpath("../templates"));
-$app->set_app_temp_dir(  realpath("../var/tmp"));
-$app->default_act = "info";
-
-
-
-// 実行
-$app->run();
-
-```
-
-## リクエストを投げて確認する。
-
-```
-curl https://[:1]/path/to/app/?action=info
-```
-
+なるべく何も余計なことがないように。
 
 
 ## ディレクトリ構成
