@@ -25,13 +25,6 @@ $app->set_app_temp_dir(  realpath("../var/tmp"));
 $app->default_act = "info";
 
 
-// Action マッピング
-// 登録
-$app->get("info", "phpinfo");
-$app->post("info", "phpinfo");
-$app->get("sample", function () use ($app) {
-  $app->render("sample.php");
-});
 
 // 実行
 $app->run();
@@ -95,9 +88,12 @@ class MyApp extends SimpleRoutedWebApp {
 //メイン
 $app = new MyApp();
 $app->document_root = '/~takuya';
+// ルート・ハンドラのマッピング
 //登録
 $app->get("/debug" , function() use ($app){  echo 1 ; });
+$app->post("/debug" , function() use ($app){  echo 2 ; });
 $app->get("/info" , 'phpinfo');
+$app->post("/info" , 'phpinfo');
 $app->get("/php/info" , 'phpinfo');
 
 // 実行
@@ -105,9 +101,11 @@ $app->run();
 
 ```
 リクエスト
-```
-curl http://[::1]/~takuya/debug?name=value
+```sh
+$ curl http://[::1]/~takuya/debug?name=value
 1
+$ curl http://[::1]/~takuya/debug -d name=value
+2
 ```
 
 ### 実行２:GETに登録する場合
@@ -136,17 +134,22 @@ class MyApp extends SimpleWebApp {
 
 //メイン
 $app = new MyApp();
+
+//Action マッピング
 //登録
 $app->get("debug" , function() use ($app){  echo 1 ; });
 $app->get("info" , 'phpinfo');
+$app->post("info", "phpinfo");
+$app->get("sample", function () use ($app) {
+  $app->render("sample.php");
+});
 
 // 実行
 $app->run();
 
 ```
 リクエスト
-```
-curl http://[::1]/~takuya/?act=debug
+```sh
+$ curl http://[::1]/~takuya/?act=debug
 1
 ```
-
