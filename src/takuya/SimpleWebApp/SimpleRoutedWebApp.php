@@ -23,12 +23,13 @@ class SimpleRoutedWebApp extends SimpleWebApp {
     
     ///
     $path = str_replace($this->document_root,'' , $request_path);
-    if ( $path[0] !== '/'  ){
-      $path = "/$path";      
-    }
     //
     if ( empty( $path  ) ) {
       $path = $this->default_route; 
+    }
+
+    if ( $path[0] !== '/'  ){
+      $path = "/$path";      
     }
     return $path;
   }
