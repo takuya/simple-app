@@ -122,3 +122,44 @@ $app->run();
 $ curl http://[::1]/~takuya/?act=debug
 1
 ```
+
+## リクエストパラメータの取得
+```php
+<?php 
+
+use takuya\SimpleWebApp\SimpleRoutedWebApp;
+
+class MyApp extends SimpleRoutedWebApp {
+  public function sample(){
+    $app = MyApp::getInstance();
+    
+    $defaults = [
+      'search' => '',
+      'limit' => 10,
+      'offset' => 0,
+    ]
+    $req = $app->requests($defaults);
+
+    //チェック
+    $req->limit = $req->limit < 1 ?: $defaults['limit']);
+    
+    $ret = query( $req->search, $req->limit , $req->offset );
+    //出力
+    $app->render('sample.php', ['records'=>$ret]);
+  }
+}
+
+//メイン
+$app = new MyApp();
+$app->document_root = '/~takuya';
+// ルート・ハンドラのマッピング
+//登録
+$app->get("/sample" , array( $app, 'sample' ));
+
+// 実行
+$app->run();
+
+
+?>
+```
+
