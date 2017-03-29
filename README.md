@@ -8,7 +8,7 @@
 なるべく何も余計なことがないように。
 
 
-## ディレクトリ構成
+## Directories
 
 ```
 .
@@ -16,72 +16,137 @@
 ├── composer.lock
 ├── composer.phar
 ├── .htaccess
-├── index.php -> public/index.php
-├── public
+├── public/
 │   └── index.php
-├── templates
-│   └── index.html
-└── vendor
+├── templates/
+│   └── index.php
+└── vendor/
 ```
 
-## インストール実行
+## Install and Hello World.
 
+### create directory
 ```
-git clone https://github.com/takuya/simple-app
-cd simple-app
+mkdir -p target/dir
+cd target/dir
+```
+### composer.phar
+```
 curl -sS https://getcomposer.org/installer | php
+```
+### composer.json
+```
+echo '
+{"repositories":[{"type":"git",
+"url":"https://github.com/takuya/simple-app.git"}],
+"require":{"takuya/simple-app":"dev-master"}}
+' > composer.json
+```
+### composer install
+```
 ./composer.phar install
 ```
+### .htaccess
+```
+echo '
+RewriteBase /target/dir
+RewriteRule .*  public/index.php [QSA,L]
+' > .htaccess
+```
+#### pubic/index.php
+```
+mkdir -p target/dir/public
+echo '<?php
 
+require __DIR__."/".'../vendor/autoload.php';
+use takuya\SimpleWebApp\SimpleRoutedWebApp;
 
+class MyApp extends SimpleRoutedWebApp {
+  public function sample(){return 'sample';}
+}
+//main
+$app = new MyApp();
+$app->document_root = '/target/dir';
+$app->get("/sample", [$app, 'sample']);
+$app->get("/info" , 'phpinfo');
+$app->run();
+' > public/index.php
+```
+#### templates dir 
 
-### 実行１:パスに登録する場合
+```
+mkdir -p target/dir/templates
+```
+#### templates/sample.php
+```
+echo '<?php echo $contents;'> templates/sample.php  
+```
+#### render template
+```
+class MyApp extends SimpleRoutedWebApp {
+  public function sample(){return ['contents':'hello world.'];}
+}
 
-サンプル
+```
 
-` /~takuya/debug ` を実行する場合 
+### Routing Sample
+
+#### sample uri 
+
+- GET /~takuya/sample 
+- GET /~takuya/user/:name
+- GET /~takuya/list?limit=100
+- POST /~takuya/sample
 
 #### .htaccess
 ```
-DirectoryIndex public/index.php
+RewriteBase /~takuya/sample
+RewriteRule .*  public/index.php [QSA,L]
 ```
 #### public/index.php
 ```php
 <?php 
 
+
+require __DIR__."/".'../vendor/autoload.php';
 use takuya\SimpleWebApp\SimpleRoutedWebApp;
 
-class MyApp extends SimpleRoutedWebApp {
-}
+class MyApp extends SimpleRoutedWebApp { }
 
-//メイン
+// main 
 $app = new MyApp();
 $app->document_root = '/~takuya';
-// ルート・ハンドラのマッピング
-//登録
-$app->get("/debug" , function() use ($app){  echo 1 ; });
-$app->post("/debug" , function() use ($app){  echo 2 ; });
-$app->get("/info" , 'phpinfo');
-$app->post("/info" , 'phpinfo');
-$app->get("/php/info" , 'phpinfo');
+// set handlers
+$app->post("/sample" ,function(){  echo 'Hello sample (POST)'; });
+$app->get("/sample" ,function(){  echo 'Hello sample (GET)'; });
+$app->get("/list",function() use ($app){
+  $defaults = ['limit':10];
+  $req= $app->requests($defaults);
+  echo $req->limit;
+}));
+$app->post("/user/:name" ,function($param){ echo $params->name; }) );
 
-// 実行
+// execute
 $app->run();
 
 ```
-リクエスト
+### request sample
 ```sh
-$ curl http://[::1]/~takuya/debug?name=value
-1
-$ curl http://[::1]/~takuya/debug -d name=value
-2
+$ curl http://[::1]/~takuya/sample
+Hello sample (GET)
+$ curl http://[::1]/~takuya/sample -d name=value
+Hello sample (POST)
+$ curl http://[::1]/~takuya/user/alice
+alice
+$ curl http://[::1]/~takuya/list?limit=10
+10
 ```
 
-### 実行２:GETに登録する場合
+### 実行２: using GET parameter
 
-サンプル
+### Sample URI
 
-` /~takuya/?action=debug ` を実行する場合 
+` /~takuya/?action=debug `  maping `$_GET['action']` to ` function ` .
 
 #### .htaccess
 ```
@@ -101,11 +166,10 @@ class MyApp extends SimpleWebApp {
   }
 }
 
-//メイン
+// main 
 $app = new MyApp();
 
-//Action マッピング
-//登録
+// mapping handlers
 $app->get("debug" , function() use ($app){  echo 1 ; });
 $app->get("info" , 'phpinfo');
 $app->post("info", "phpinfo");
@@ -113,17 +177,29 @@ $app->get("sample", function () use ($app) {
   $app->render("sample.php");
 });
 
-// 実行
+// run
 $app->run();
 
 ```
-リクエスト
+### Request sample
 ```sh
 $ curl http://[::1]/~takuya/?act=debug
 1
 ```
 
-## リクエストパラメータの取得
+## HTTP Request Paramters
+
+PHP request using  symbols variables are too much...
+
+```
+
+if ( empty( $_GET['limit'] ) ){ // how many shifts needed...
+}
+
+$request->limit; // so simple.
+
+```
+
 ```php
 <?php 
 
@@ -140,23 +216,22 @@ class MyApp extends SimpleRoutedWebApp {
     ]
     $req = $app->requests($defaults);
 
-    //チェック
+    //check range 
     $req->limit = $req->limit < 1 ?: $defaults['limit'];
     
     $ret = query( $req->search, $req->limit , $req->offset );
-    //出力
+    // output
     $app->render('sample.php', ['records'=>$ret]);
   }
 }
 
-//メイン
+// instance
 $app = new MyApp();
 $app->document_root = '/~takuya';
-// ルート・ハンドラのマッピング
-//登録
+// mappping handlers
 $app->get("/sample" , array( $app, 'sample' ));
 
-// 実行
+// run 
 $app->run();
 
 
