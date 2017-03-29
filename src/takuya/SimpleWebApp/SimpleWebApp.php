@@ -10,6 +10,8 @@ namespace takuya\SimpleWebApp;
 class SimpleWebApp {
 
   protected $routes;
+  protected $config;
+  protected $filters;
   protected $act_key_name;
   protected $app_temp_dir;
   protected $app_static_dir;
@@ -22,7 +24,7 @@ class SimpleWebApp {
     $this->routes = array();
     $this->act_key_name = "action"; 
     $this->default_act = "index";
-    $this->get("index", function(){ echo "index";});
+    $this->get("index", function(){ echo "sample index.";});
     $this->get("static", [ $this, "send_static" ]);
     self::$_instance = $this;
     $this->add_pre_get_filter( array($this,'rescan_hash_string_in_query_string') );
@@ -34,6 +36,7 @@ class SimpleWebApp {
     $req = (object) $req;
     return $req;
   }
+  //TODO : move to __call
   public static function get_request($defaults){
     return self::parse_request( $defaults, $_REQUEST);
   }
@@ -95,12 +98,14 @@ class SimpleWebApp {
       extract($params);
     }
     $path =  $this->config["template_path"]."/".$f_name;
+
     if( !file_exists($path) ){
       throw new \Exception("template $f_name dose not found.");
       return ;
     }
     return $this->send_content($path, $params, $auto_flush);
   }
+  
   //ファイルを送信する処理
   public function send_content( $path, $params=[], $auto_flush = true){
     if( !empty( $params )){ extract($params); }
@@ -156,12 +161,12 @@ class SimpleWebApp {
   protected function http_handler($method, $route, $func){
     $this->routes[$method][$route] = $func;
   }
+  //TODO : move to __call
   public function get( $route, $func ){
     $this->http_handler( 'GET', $route, $func );
   }
   public function head( $route, $func ){
     $this->http_handler( 'HEAD', $route, $func );
-    $this->routes["HEAD"][$name] = $func;
   }
   public function post( $route, $func ){
     $this->http_handler( 'POST', $route, $func );
@@ -183,6 +188,7 @@ class SimpleWebApp {
     return $this;
   }
   //aliases
+  //TODO : move to __call
   public function add_pre_get_filter($func){
     return $this->add_filter( 'pre', 'GET', $func );
   }
@@ -276,11 +282,29 @@ class SimpleWebApp {
     
   }
   //aliases
+  //TODO : move to __call
   public function do_preGET  (){ $this->do_filter('preGET'  );}
   public function do_postGET (){ $this->do_filter('postGET' );}
   public function do_prePOST (){ $this->do_filter('prePOST' );}
   public function do_postPOST(){ $this->do_filter('postPOST');}
+
+
+  //aliases for access class variables.
+  public function __set($name,$var){
+    if($name=='template_path'){
+      $this->set_template_path($var);
+      return;
+    }    
+
+    $this->$name = $var;
+  }
+  public function __get($name){
+    if($name=='template_path'){
+      return $this->get_template_path();
+    }    
+  }
   
+
   /****************
   **  幾つかのブラウザに見られるバグの強引な対応
   **  バグはハッシュ文字列について起きる。
