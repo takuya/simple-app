@@ -10,9 +10,9 @@
 ## what is this ?
 
 
-This is http requet mapper. This Apps mapping path to uri.  an App for routing to `PATH` in uri to mapped `funciton`.
+This is http requet mapper. This Apps mapping path to uri.  
 
-This framework app aimed at Simple mapping function HTTP RESTful URI .
+This framework aimed at mapping function HTTP RESTful URI.
 
 
 ```php
@@ -31,7 +31,7 @@ $app->put ("/user/:name/show/info", [$app, 'update_user']);
 
 ```
 
-
+This App will be routing  `PATH in uri`  to mapped `funciton`.
 
 ## Directories
 
@@ -48,7 +48,10 @@ $app->put ("/user/:name/show/info", [$app, 'update_user']);
 └── vendor/
 ```
 
-## Install and Hello World.
+## Install and 'Hello World.'
+
+Sample1. Routing by URI(PATH)
+
 
 ### create directory
 ```
@@ -167,7 +170,7 @@ $ curl http://[::1]/~takuya/list?limit=10
 10
 ```
 
-### 実行２: using GET parameter
+### Sample2: Routing by GET parameter
 
 ### Sample URI
 
