@@ -8,8 +8,30 @@ use takuya\SimpleWebApp\SimpleWebApp;
 
 class SimpleWebAppTests extends \PHPUnit_Framework_TestCase {
   public function setUp() {
-
-  
+    if ( ! function_exists("rm_f") ) {
+     function rm_f( $path ){
+       $dir = new \DirectoryIterator($path);
+       if ( !$dir->isDir() ) { return false; }
+       foreach($dir as $e ){
+         if ( $e->isDot() ) continue;
+         if ( $e->isDir() ) {
+           rm_f($e->getPathName());
+           rmdir($e->getPathName());
+         }else{
+           unlink ( $e->getPathName() ) ;
+         }
+       }
+       return rmdir($path);
+     }
+   }
+   if ( ! function_exists("tempDir") ) {
+     function tempDir($prefix = "php-temp"){
+       $tmp_file_name= tempnam(sys_get_temp_dir(), $prefix);
+       @unlink($tmp_file_name);
+       @mkdir($tmp_file_name);
+       return $tmp_file_name;
+     }
+   }
   }
   /**
    * @covers Api::output
@@ -117,6 +139,61 @@ class SimpleWebAppTests extends \PHPUnit_Framework_TestCase {
      $this->expectOutputString('value');
      
    }
+   /**
+    * @covers Api::output
+    * @runInSeparateProcess
+    */
+    public function test_default_render_string(){
+      $_SERVER['REQUEST_METHOD'] = 'GET';
+      $_GET = [
+                'action'=>'debug',
+              ];
+      $_POST = [
+              ];
+      $_REQUEST= array_merge( $_GET,$_POST );
+      
+      
+      $app = new SimpleWebApp();
+      $app->get("debug" , function(){ return '1'; });
+      
+      // 実行
+      $app->run();
+      
+      // 出力をテスト
+      $this->expectOutputString('1');
+    }
+    public function test_default_render_array(){
+      
+      // http request
+      $_SERVER['REQUEST_METHOD'] = 'GET';
+      $_GET = [
+                'action'=>'debug',
+              ];
+      $_POST = [
+              ];
+      $_REQUEST= array_merge( $_GET,$_POST );
+      
+      /// preparing templates.
+      $tmpname = tempDir('sample-phpunit');
+      file_put_contents( "$tmpname/debug.php", '<?php echo $name;' );
+
+      
+      // main
+      $app = new SimpleWebApp();
+      $app->template_path = $tmpname;
+      $app->get("debug" , function(){ return array('name'=>'value'); });
+      
+      // execute main
+      $app->run();
+      
+      // assertion.
+      $this->expectOutputString('value');
+      
+      
+      // dispersing templates
+      rm_f($tmpname);
+      
+    }
 
 }
 
