@@ -37,8 +37,10 @@ class SimpleRoutedWebApp extends SimpleWebApp {
     foreach ($patterns as $key) {
       $regex= preg_replace( '/:([^\/]+)/','(?<$1>[[:alnum:]]+)', $key );
       $regex= preg_replace( '/\//','\\/', $regex);
-      $regex="/$regex/";
-      if( preg_match_all($regex,$path,$matches) ){
+      $regex="/$regex$/";
+      if( preg_match_all($regex,$path,$matches) 
+        && substr_count('/',$path) == substr_count('/',$key) )
+      {
         //TODO:: from 5.6 replace this foreach to array_filter
         $matches = array_map(function($v){return $v[0];},$matches);
         foreach ($matches as $k => $v) {

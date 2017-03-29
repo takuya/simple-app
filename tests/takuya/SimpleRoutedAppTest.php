@@ -118,6 +118,32 @@ class SimpleRoutedWebAppTests extends \PHPUnit_Framework_TestCase {
      // 出力をテスト
      $this->expectOutputString('hyogo');
     }
+    /**
+     * @covers Api::output
+     * @runInSeparateProcess
+     */
+    public function test_custom_routing_exactly_match(){
+      //ダミーリクエストデータ
+      $_SERVER['REQUEST_METHOD'] = 'GET';
+      $_SERVER['REQUEST_URI'] = '/~takuya/debug/12345/name/?name=value';
+      parse_str( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY) ,$a);
+
+      $_GET = $a;
+      $_POST = [];
+      $_REQUEST= array_merge( $_GET,$_POST );
+      
+      //メイン
+      $app = new SimpleRoutedWebApp();
+      $app->document_root = '/~takuya';
+      $app->get("/debug/:id/name" , function($args) use ($app){;});
+      
+      // 実行
+      $app->run();
+      
+      // 出力をテスト
+      $this->expectOutputString('Action not implemented.');
+     }
+
 
 }
 
