@@ -50,6 +50,13 @@ class SimpleWebApp {
   public static function post_params($defaults){
     return self::parse_request( $defaults, $_POST);
   }
+  public static function requests_json($defaults){
+    if( empty($_SERVER["CONTENT_TYPE"]) || strpos( $_SERVER["CONTENT_TYPE"],'/json') === false){
+      return array();
+    }
+    $json_string = file_get_contents('php://input');
+    return self::parse_request($defaults,json_decode($json_string));
+  }
 
   // テンプレート処理
   public function set_template_path($arg){
