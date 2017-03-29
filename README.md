@@ -7,6 +7,31 @@
 
 なるべく何も余計なことがないように。
 
+## what is this ?
+
+
+This is http requet mapper. Apps routing `PATH` in uri to a `funciton`.
+
+This framework app aimed at Simple mapping function HTTP RESTful URI .
+
+
+```php
+<?php 
+$app->get ("info" , 'phpinfo');
+$app->post("info", "phpinfo");
+
+$app->get ("/items/:id", [$app, 'item_detail']);
+$app->post("/items/:id", [$app, 'item_add_new']);
+$app->put ("/items/:id", [$app, 'item_update']);
+
+$app->get ("/user/:name/show/info", [$app, 'show_user']);
+$app->post("/user/:name/show/info", [$app, 'new_user']);
+$app->put ("/user/:name/show/info", [$app, 'update_user']);
+
+
+```
+
+
 
 ## Directories
 
