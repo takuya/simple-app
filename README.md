@@ -20,9 +20,9 @@ This framework aimed at mapping function HTTP RESTful URI.
 $app->get ("info" , 'phpinfo');
 $app->post("info", "phpinfo");
 
-$app->get ("/items/:id", [$app, 'item_detail']);
-$app->post("/items/:id", [$app, 'item_add_new']);
-$app->put ("/items/:id", [$app, 'item_update']);
+$app->get ("/items/:id", [$item_obj, 'detail']);
+$app->post("/items/:id", [$item_obj, 'add_new']);
+$app->put ("/items/:id", [$item_obj, 'update']);
 
 $app->get ("/user/:name/profile/:twitter_id", [$app, 'show_user']);
 $app->post("/user/:name/profile/:twitter_id", [$app, 'new_user']);
