@@ -213,15 +213,14 @@ class SimpleWebApp {
       $this->{"do_pre{$req_method}"}();
     }
 
-    // methodが登録されてる？
-    if ( empty($this->routes[$req_method]) ){
-      $this->http_method_not_implemented();
-      return ;
-    }
-    // Actionを決める
     $func = $this->act_func($req_method);
-    if ( empty ( $func ) ) {
-      $act_name = $this->act_name() ? $this->act_name() : 'null';
+    // Actionを決める
+    if ( empty ( $func = $this->act_func($req_method) ) ){
+      // methodが登録されてる？
+      if ( empty($this->routes[$req_method]) ){
+        $this->http_method_not_implemented();
+        return ;
+      }
       $this->action_not_found( $this->act_name() );
       return ;
     }
