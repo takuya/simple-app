@@ -128,7 +128,7 @@ class MyApp extends SimpleRoutedWebApp {
 
 #### .htaccess
 ```
-RewriteBase /~takuya/sample
+RewriteBase /~takuya
 RewriteRule .*  public/index.php [QSA,L]
 ```
 #### public/index.php
