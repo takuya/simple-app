@@ -9,7 +9,9 @@
             "email": "takuya.1st+nospam@gmail.com"
         }
     ],
-    "require": {},
+    "require": {
+      "php": ">= 5.4.0"
+    },
     "require-dev": {
         "phpunit/phpunit": "*"
     },
