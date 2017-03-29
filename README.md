@@ -10,7 +10,7 @@
 ## what is this ?
 
 
-This is http requet mapper. Apps routing `PATH` in uri to a `funciton`.
+This is http requet mapper. This Apps mapping path to uri.  an App for routing to `PATH` in uri to mapped `funciton`.
 
 This framework app aimed at Simple mapping function HTTP RESTful URI .
 
