@@ -225,14 +225,34 @@ class SimpleWebApp {
       return ;
     }
     //route 登録したハンドラを実行
-    call_user_func_array($func, array());
+    $ret = call_user_func_array($func, array());
     
-    
+    //文字列・オブジェクト・関数が返ってきたら実行する。
+    if ($ret){
+      $this->default_render( $ret );
+    }
+
     // ポスト・フィルタープラグイン処理
     if ( method_exists($this, "do_post${req_method}") ){
       $this->{"do_post{$req_method}"}();
     }
     
+  }
+  
+  protected function default_render($ret){
+    switch (gettype($ret)) {
+      case 'string':
+        $ret =function() use($ret) {echo $ret;};
+        break;
+      case 'array':
+        $ret = function()use($ret){
+          $templage_ext = '.php';
+          $f_name = preg_replace('/\..+/','', $this->act_name() ).$templage_ext;
+          $this->render($f_name , $ret );
+        };
+        break;
+    }    
+    call_user_func_array( $ret, array() );      
   }
 
 
